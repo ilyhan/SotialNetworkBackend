@@ -1,10 +1,20 @@
 const express = require("express");
 const app = express();
+const cookieParser = require('cookie-parser');
 
 const cors = require('cors');
 
 app.use(express.json());
-app.use(cors());
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        callback(null, true); 
+    },
+    credentials: true // Разрешите отправку куков
+}));
+
+app.use(cookieParser());
 
 const userRouter = require('./routes/user.routes');
 app.use('/api', userRouter);

@@ -10,8 +10,8 @@ router.post('/user', [
     check('email', "Почта не может быть пуста").notEmpty(),
     check('password', "Пароль должен быть больше 5 и меньше 15 символов").isLength({min: 5, max: 15}),
 ], userController.createUser);
+router.post('/login', userController.login);
 // router.get('/user/:nickname', userController.getUser);
-// router.post('/message', userController.createMessage);
 // router.get('/message', userController.getMessages);
 
 module.exports = router;
