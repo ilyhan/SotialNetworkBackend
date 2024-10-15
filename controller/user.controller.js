@@ -9,7 +9,7 @@ const generateAccessToken = (id) => {
         id,
     }
 
-    return jwt.sign(payload, secret, { expiresIn: "24h" });
+    return jwt.sign(payload, secret, { expiresIn: "220s" });
 }
 
 class UserController {
@@ -63,9 +63,18 @@ class UserController {
             const token = generateAccessToken(user.id);
 
             res.cookie('token', token, { httpOnly: true, secure: false });
-            return res.json({token});
+            return res.json({ token });
         } catch (e) {
-            return res.status(400).json({ message: "Произошла авторизации пользователя", error: e.message });
+            return res.status(400).json({ message: "Произошла ошибка авторизации пользователя", error: e.message });
+        }
+    }
+
+    async refresh(req, res) {
+        try {
+            const { id } = req.user;
+            res.status(200).json(id);
+        } catch (e) {
+            return res.status(400).json({ message: "Произошла ошибка авторизации пользователя", error: e.message });
         }
     }
 }
