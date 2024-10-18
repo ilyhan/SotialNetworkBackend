@@ -3,6 +3,10 @@ const router = new Router();
 const userController = require('../controller/user.controller');
 const { check } = require('express-validator');
 const authorization = require('../middlewares/authorization');
+const multer = require('multer');
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 router.post('/user', [
     check('first_name', "Имя пользователя не может быть пусто").notEmpty(),
@@ -13,7 +17,7 @@ router.post('/user', [
 ], userController.createUser);
 router.post('/login', userController.login);
 router.get('/refresh', authorization, userController.refresh);
-router.post('/newpost', authorization, userController.createPost);
+router.post('/newpost', [authorization, upload.array('images', 10)], userController.createPost);
 router.get('/posts', authorization, userController.getAllPosts);
 router.post('/post/like', authorization, userController.likes);
 router.get('/users/:username', authorization, userController.getUser);

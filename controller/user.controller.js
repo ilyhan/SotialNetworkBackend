@@ -3,6 +3,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const { secret } = require('../config');
+const {
+    ref,
+    uploadBytes,
+    getDownloadURL,
+} = require('firebase/storage');
+const { auth } = require('../firebase.config');
 
 const generateAccessToken = (id) => {
     const payload = {
@@ -80,17 +86,27 @@ class UserController {
 
     async createPost(req, res) {
         try {
+            const files = req.files;
             const {
                 content,
             } = req.body;
             const { id } = req.user;
 
-            const result = await db.query('INSERT INTO posts (user_id, content) values ($1, $2) RETURNING *', [id, content]);
+            const urls = [];
+            for (const file of files) {
+                const filename = new Date().getTime() + '_' + file.filename;
+                const imageRef = ref(auth, 'products/' + filename);
+                const snapshot = await uploadBytes(imageRef, file.buffer);
+                const imageURL = await getDownloadURL(snapshot.ref);
+                urls.push(imageURL);
+            }
+
+            const result = await db.query('INSERT INTO posts (user_id, content, media_content) values ($1, $2, $3) RETURNING *', [id, content, urls]);
 
             if (!result.rows.length) {
                 return res.status(400).json({ message: "Ошибка записи данных" });
             }
-            return res.json(result);
+            return res.json(result.rows);
         } catch (e) {
             return res.status(400).json({ message: "Произошла непредвиденная ошибка", error: e.message });
         }
@@ -169,8 +185,8 @@ class UserController {
                 WHERE u.username = $2
             `, [id, username]);
 
-            if(!result.rows.length){
-                return res.status(400).json({message: "Ошибка запроса к БД"});
+            if (!result.rows.length) {
+                return res.status(400).json({ message: "Ошибка запроса к БД" });
             }
 
             const userInfo = result.rows[0];
