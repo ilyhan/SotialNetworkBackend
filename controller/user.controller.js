@@ -108,9 +108,14 @@ class UserController {
                     p.media_content, 
                     p.likes_count,
                     p.created_at,
-                    EXISTS (SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = $1) AS liked
+                    EXISTS (SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = $1) AS liked,
+                    users.username, 
+                    users.avatar,
+                    users.first_name,
+                    users.last_name
                 FROM 
                     posts p
+                JOIN users ON p.user_id = users.id
                 ORDER BY 
                     p.created_at DESC
             `, [id]);
