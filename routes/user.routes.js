@@ -16,5 +16,7 @@ router.get('/refresh', authorization, userController.refresh);
 router.post('/newpost', authorization, userController.createPost);
 router.get('/posts', authorization, userController.getAllPosts);
 router.post('/post/like', authorization, userController.likes);
+router.get('/users/:username', authorization, userController.getUser);
+router.post('/follow', authorization, userController.follow);
 
 module.exports = router;

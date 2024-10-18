@@ -146,6 +146,62 @@ class UserController {
             return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
         }
     }
+
+    async getUser(req, res) {
+        try {
+            const { id } = req.user;
+            const username = req.params.username;
+
+            const result = await db.query(`
+                SELECT u.id,
+                    u.first_name,
+                    u.last_name,
+                    u.username,
+                    u.avatar,
+                    u.background_image, 
+                    (SELECT COUNT(*) FROM followers WHERE followee_id = u.id) AS follower_count,
+                    (SELECT COUNT(*) FROM followers WHERE follower_id = u.id) AS following_count,
+                    CASE 
+                        WHEN (SELECT COUNT(*) FROM followers WHERE follower_id = $1 AND followee_id = u.id) > 0 THEN TRUE 
+                        ELSE FALSE 
+                    END AS is_following
+                FROM users u
+                WHERE u.username = $2
+            `, [id, username]);
+
+            if(!result.rows.length){
+                return res.status(400).json({message: "Ошибка запроса к БД"});
+            }
+
+            const userInfo = result.rows[0];
+
+            const posts = await db.query('SELECT * FROM posts WHERE user_id = $1', [userInfo.id]);
+            userInfo.posts = posts.rows;
+
+            return res.json(userInfo);
+        } catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async follow(req, res) {
+        try {
+            const { id: followerId } = req.user;
+            const { followedId } = req.body;
+
+            const existingFollow = await db.query('SELECT * FROM followers WHERE follower_id = $1 AND followee_id = $2', [followerId, followedId]);
+
+            if (existingFollow.rowCount > 0) {
+                await db.query('DELETE FROM followers WHERE follower_id = $1 AND followee_id = $2', [followerId, followedId]);
+                return res.json({ followed: false });
+            } else {
+                await db.query('INSERT INTO followers (follower_id, followee_id) VALUES ($1, $2)', [followerId, followedId]);
+                return res.json({ followed: true });
+            }
+        } catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
 }
 
 module.exports = new UserController();
