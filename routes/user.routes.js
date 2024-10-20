@@ -22,5 +22,6 @@ router.get('/posts', authorization, userController.getAllPosts);
 router.post('/post/like', authorization, userController.likes);
 router.get('/users/:username', authorization, userController.getUser);
 router.post('/follow', authorization, userController.follow);
+router.get('/search/:searchText', authorization, userController.search);
 
 module.exports = router;

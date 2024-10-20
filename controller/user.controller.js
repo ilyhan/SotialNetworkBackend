@@ -95,7 +95,7 @@ class UserController {
             const urls = [];
             for (const file of files) {
                 const filename = new Date().getTime() + '_' + file.filename;
-                const imageRef = ref(auth, 'products/' + filename);
+                const imageRef = ref(auth, 'posts/' + filename);
                 const snapshot = await uploadBytes(imageRef, file.buffer);
                 const imageURL = await getDownloadURL(snapshot.ref);
                 urls.push(imageURL);
@@ -214,6 +214,22 @@ class UserController {
                 await db.query('INSERT INTO followers (follower_id, followee_id) VALUES ($1, $2)', [followerId, followedId]);
                 return res.json({ followed: true });
             }
+        } catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async search(req, res) {
+        try{
+            let searchText = "%" +  req.params.searchText + "%" ;
+            console.log(searchText);
+
+            const result = await db.query(
+                `SELECT id, first_name, last_name, username, avatar 
+                 FROM users 
+                 WHERE username like $1`, [searchText]);
+
+            return res.json(result.rows);
         } catch (e) {
             return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
         }
