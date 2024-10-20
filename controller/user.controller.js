@@ -94,7 +94,7 @@ class UserController {
 
             const urls = [];
             for (const file of files) {
-                const filename = new Date().getTime() + '_' + file.filename;
+                const filename = new Date().getTime();
                 const imageRef = ref(auth, 'posts/' + filename);
                 const snapshot = await uploadBytes(imageRef, file.buffer);
                 const imageURL = await getDownloadURL(snapshot.ref);
@@ -220,8 +220,8 @@ class UserController {
     }
 
     async search(req, res) {
-        try{
-            let searchText = "%" +  req.params.searchText + "%" ;
+        try {
+            let searchText = "%" + req.params.searchText + "%";
             console.log(searchText);
 
             const result = await db.query(
@@ -230,6 +230,55 @@ class UserController {
                  WHERE username like $1`, [searchText]);
 
             return res.json(result.rows);
+        } catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async setAvatar(req, res) {
+        try {
+            const file = req.file;
+            const { id } = req.user;
+
+            const filename = new Date().getTime() + '_' + file.filename;
+            const imageRef = ref(auth, 'avatar/' + filename);
+            const snapshot = await uploadBytes(imageRef, file.buffer);
+            const imageURL = await getDownloadURL(snapshot.ref);
+
+            await db.query('UPDATE users SET avatar = $2 WHERE id = $1 ', [id, imageURL]);
+
+            return res.json({ image: imageURL });
+        } catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async setBackground(req, res) {
+        try {
+            const file = req.file;
+            const { id } = req.user;
+
+            const filename = new Date().getTime() + '_' + file.filename;
+            const imageRef = ref(auth, 'background/' + filename);
+            const snapshot = await uploadBytes(imageRef, file.buffer);
+            const imageURL = await getDownloadURL(snapshot.ref);
+
+            await db.query('UPDATE users SET background_image = $2 WHERE id = $1 ', [id, imageURL]);
+
+            return res.json({ image: imageURL });
+        } catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async setDescriptionProfile(req, res) {
+        try {
+            const { id } = req.user;
+            const { description } = req.body;
+
+            await db.query('UPDATE users SET description = $2 WHERE id = $1 ', [id, description]);
+
+            return res.json({ description: description });
         } catch (e) {
             return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
         }

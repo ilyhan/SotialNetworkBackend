@@ -23,5 +23,8 @@ router.post('/post/like', authorization, userController.likes);
 router.get('/users/:username', authorization, userController.getUser);
 router.post('/follow', authorization, userController.follow);
 router.get('/search/:searchText', authorization, userController.search);
+router.post('/avatar', [authorization, upload.single('images')], userController.setAvatar);
+router.post('/background', [authorization, upload.single('images')], userController.setBackground);
+router.post('/description', authorization, userController.setDescriptionProfile);
 
 module.exports = router;
