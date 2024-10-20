@@ -78,7 +78,7 @@ class UserController {
     async logout(req, res) {
         try {
             res.cookie('token', '', { httpOnly: true, secure: false, expires: new Date(0) });
-            
+
             return res.json({ message: "Вы успешно вышли из системы" });
         } catch (e) {
             return res.status(500).json({ message: "Ошибка при выходе из системы", error: e.message });
@@ -289,6 +289,22 @@ class UserController {
             await db.query('UPDATE users SET description = $2 WHERE id = $1 ', [id, description]);
 
             return res.json({ description: description });
+        } catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async newSupportMessage(req, res) {
+        try {
+            const { id } = req.user;
+            const { message } = req.body;
+
+            const result = await db.query('INSERT INTO support (user_id, description) values ($1, $2) RETURNING *', [id, message]);
+
+            if (!result.rows.length) {
+                return res.status(400).json({ message: "Ошибка запроса к БД" });
+            }
+            return res.json();
         } catch (e) {
             return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
         }
