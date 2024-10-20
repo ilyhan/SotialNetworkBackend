@@ -75,6 +75,16 @@ class UserController {
         }
     }
 
+    async logout(req, res) {
+        try {
+            res.cookie('token', '', { httpOnly: true, secure: false, expires: new Date(0) });
+            
+            return res.json({ message: "Вы успешно вышли из системы" });
+        } catch (e) {
+            return res.status(500).json({ message: "Ошибка при выходе из системы", error: e.message });
+        }
+    }
+
     async refresh(req, res) {
         try {
             const { id } = req.user;
