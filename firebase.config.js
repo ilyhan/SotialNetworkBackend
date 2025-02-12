@@ -1,13 +1,14 @@
+require('dotenv').config();
 const { initializeApp } = require('firebase/app');
 const { getStorage } = require('firebase/storage');
 
 const firebaseConfig = {
-    apiKey: "AIzaSyD6OI6IiaCnz6TX-z6O604rsZJ40UoTOSI",
-    authDomain: "postnest-dcc77.firebaseapp.com",
-    projectId: "postnest-dcc77",
-    storageBucket: "postnest-dcc77.appspot.com",
-    messagingSenderId: "653085832518",
-    appId: "1:653085832518:web:2a3079d556b39be2ebe147",
+    apiKey: process.env.API_KEY,
+    authDomain: process.env.AUTH_DOMAIN,
+    projectId: process.env.PROJECT_ID,
+    storageBucket: process.env.STORAGE_BUCKET,
+    messagingSenderId: process.env.MESSAGING_SENDER_ID,
+    appId: process.env.APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
