@@ -69,7 +69,13 @@ class UserController {
 
             const token = generateAccessToken(user.id, username);
 
-            res.cookie('token', token, { httpOnly: true, secure: true });
+            res.cookie('token', token, {
+                httpOnly: true,  
+                secure: true,    
+                domain: 'sotialnetworkbackend.onrender.com',
+                path: '/',         
+                sameSite: 'none'   
+            });
             return res.json({ token });
         } catch (e) {
             return res.status(400).json({ message: "Произошла ошибка авторизации пользователя", error: e.message });
