@@ -10,9 +10,10 @@ const {
 } = require('firebase/storage');
 const { auth } = require('../firebase.config');
 
-const generateAccessToken = (id) => {
+const generateAccessToken = (id, username) => {
     const payload = {
         id,
+        username,
     }
 
     return jwt.sign(payload, secret, { expiresIn: "1d" });
@@ -41,7 +42,7 @@ class UserController {
 
             const hashPassword = bcrypt.hashSync(password, 7);
             const newUser = await db.query('INSERT INTO users (first_name, last_name, username, email, password) values ($1, $2, $3, $4, $5) RETURNING *', [first_name, last_name, username, email, hashPassword]);
-            return res.json(newUser.rows);
+            return res.json(newUser.rows[0]);
         } catch (e) {
             return res.status(400).json({ message: "Произошла ошибка при создании пользователя", error: e.message });
         }
@@ -53,7 +54,7 @@ class UserController {
                 username,
                 password
             } = req.body;
-
+            console.log(username)
             const result = await db.query('SELECT * FROM users WHERE username = $1', [username]);
             if (result.rows.length == 0) {
                 return res.status(400).json({ message: "Пользователь с таким Никнеймом не найден" });
@@ -66,7 +67,7 @@ class UserController {
                 return res.status(400).json({ message: "Введен неверный пароль" });
             }
 
-            const token = generateAccessToken(user.id);
+            const token = generateAccessToken(user.id, username);
 
             res.cookie('token', token, { httpOnly: true, secure: false });
             return res.json({ token });
@@ -87,8 +88,8 @@ class UserController {
 
     async refresh(req, res) {
         try {
-            const { id } = req.user;
-            res.status(200).json(id);
+            const { id, username } = req.user;
+            res.status(200).json({ id: id, user: username });
         } catch (e) {
             return res.status(400).json({ message: "Произошла непредвиденная ошибка", error: e.message });
         }
@@ -102,16 +103,25 @@ class UserController {
             } = req.body;
             const { id } = req.user;
 
-            const urls = [];
-            for (const file of files) {
-                const filename = new Date().getTime();
-                const imageRef = ref(auth, 'posts/' + filename);
-                const snapshot = await uploadBytes(imageRef, file.buffer);
-                const imageURL = await getDownloadURL(snapshot.ref);
-                urls.push(imageURL);
+            let result;
+
+            if (files.length) {
+                const urls = [];
+
+                for (const file of files) {
+                    const filename = new Date().getTime();
+                    const imageRef = ref(auth, 'posts/' + filename);
+                    const snapshot = await uploadBytes(imageRef, file.buffer);
+                    const imageURL = await getDownloadURL(snapshot.ref);
+                    urls.push(imageURL);
+                }
+
+                result = await db.query('INSERT INTO posts (user_id, content, media_content) values ($1, $2, $3) RETURNING *', [id, content, urls]);
+
+            } else {
+                result = await db.query('INSERT INTO posts (user_id, content) values ($1, $2) RETURNING *', [id, content]);
             }
 
-            const result = await db.query('INSERT INTO posts (user_id, content, media_content) values ($1, $2, $3) RETURNING *', [id, content, urls]);
 
             if (!result.rows.length) {
                 return res.status(400).json({ message: "Ошибка записи данных" });
@@ -176,7 +186,19 @@ class UserController {
     async getUser(req, res) {
         try {
             const { id } = req.user;
-            const username = req.params.username;
+            const usernameParam = req.params.username;
+            console.log(usernameParam, id);
+
+            let username;
+
+            if (id == usernameParam) {
+                const res = await db.query('SELECT username FROM users WHERE id = $1', [id]);
+                username = res.rows[0].username;
+            } else {
+                username = usernameParam;
+            }
+
+            console.log(username);
 
             const result = await db.query(`
                 SELECT u.id,
@@ -214,7 +236,7 @@ class UserController {
         try {
             const { id: followerId } = req.user;
             const { followedId } = req.body;
-
+            console.log('f', followedId)
             const existingFollow = await db.query('SELECT * FROM followers WHERE follower_id = $1 AND followee_id = $2', [followerId, followedId]);
 
             if (existingFollow.rowCount > 0) {
@@ -232,7 +254,6 @@ class UserController {
     async search(req, res) {
         try {
             let searchText = "%" + req.params.searchText + "%";
-            console.log(searchText);
 
             const result = await db.query(
                 `SELECT id, first_name, last_name, username, avatar 
