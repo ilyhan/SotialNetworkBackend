@@ -69,7 +69,7 @@ class UserController {
 
             const token = generateAccessToken(user.id, username);
 
-            res.cookie('token', token, { httpOnly: true, secure: false });
+            res.cookie('token', token, { httpOnly: true, secure: true });
             return res.json({ token });
         } catch (e) {
             return res.status(400).json({ message: "Произошла ошибка авторизации пользователя", error: e.message });
@@ -78,7 +78,7 @@ class UserController {
 
     async logout(req, res) {
         try {
-            res.cookie('token', '', { httpOnly: true, secure: false, expires: new Date(0) });
+            res.cookie('token', '', { httpOnly: true, secure: true, expires: new Date(0) });
 
             return res.json({ message: "Вы успешно вышли из системы" });
         } catch (e) {
