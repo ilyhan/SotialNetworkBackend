@@ -28,5 +28,8 @@ router.post('/avatar', [authorization, upload.single('images')], userController.
 router.post('/background', [authorization, upload.single('images')], userController.setBackground);
 router.post('/description', authorization, userController.setDescriptionProfile);
 router.post('/support', authorization, userController.newSupportMessage);
+router.get('/favorites', authorization, userController.getFavoritesPosts);
+router.get('/followers/:user_id', authorization, userController.getFollowers);
+router.get('/following/:user_id', authorization, userController.getFollowing);
 
 module.exports = router;

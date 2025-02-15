@@ -70,11 +70,11 @@ class UserController {
             const token = generateAccessToken(user.id, username);
 
             res.cookie('token', token, {
-                httpOnly: true,  
-                secure: true,    
-                domain: 'sotialnetworkbackend.onrender.com',
-                path: '/',         
-                sameSite: 'none'   
+                httpOnly: true,
+                secure: true,
+                // domain: 'sotialnetworkbackend.onrender.com',
+                // path: '/',         
+                // sameSite: 'none'   
             });
             return res.json({ token });
         } catch (e) {
@@ -178,11 +178,11 @@ class UserController {
             if (result.rows.length > 0) {
                 await db.query('DELETE FROM likes WHERE user_id = $1 AND post_id = $2', [user_id, post_id]);
                 await db.query('UPDATE posts SET likes_count = likes_count - 1 WHERE id = $1', [post_id]);
-                return res.json({ message: 'Лайк удален' });
+                return res.json({ message: 'Лайк удален', is_liked: false, post_id });
             } else {
                 await db.query('INSERT INTO likes (user_id, post_id) VALUES ($1, $2)', [user_id, post_id]);
                 await db.query('UPDATE posts SET likes_count = likes_count + 1 WHERE id = $1', [post_id]);
-                return res.json({ message: 'Пост лайкнут' });
+                return res.json({ message: 'Пост лайкнут', is_liked: true, post_id });
             }
         } catch (e) {
             return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
@@ -333,6 +333,77 @@ class UserController {
             }
             return res.json();
         } catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async getFavoritesPosts(req, res) {
+        try {
+            const { id } = req.user;
+
+            const result = await db.query(`
+                SELECT p.*,                     
+                    users.username, 
+                    users.avatar,
+                    users.first_name,
+                    users.last_name, 
+                    1 as liked 
+                FROM posts p
+                JOIN likes l ON l.post_id = p.id
+                JOIN users ON p.user_id = users.id
+                WHERE l.user_id = $1
+                ORDER BY 
+                    p.created_at DESC
+            `, [id]);
+
+            return res.json(result.rows);
+        }
+        catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async getFollowers(req, res) {
+        try {
+            const user_id = req.params.user_id;
+
+            const result = await db.query(`
+                SELECT u.username, 
+                    u.avatar,
+                    u.first_name,
+                    u.last_name,
+                    u.id
+                FROM followers f
+                JOIN users u ON u.id = f.follower_id
+                WHERE followee_id = $1
+            `, [user_id]);
+
+            res.json(result.rows);
+        }
+        catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async getFollowing(req, res) {
+        try {
+            const user_id = req.params.user_id;
+
+            const result = await db.query(`
+                SELECT u.username, 
+                    u.avatar,
+                    u.first_name,
+                    u.last_name,
+                    u.id
+                FROM followers f
+                JOIN users u ON u.id = f.followee_id
+                WHERE follower_id = $1
+            `, [user_id]);
+
+            res.json(result.rows);
+
+        }
+        catch (e) {
             return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
         }
     }

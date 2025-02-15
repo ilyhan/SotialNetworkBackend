@@ -3,7 +3,7 @@ const { secret } = require('../config');
 
 function authorization(req, res, next) {
     const token = req.cookies.token;
-    console.log(req.cookies)
+
     if(!token) {
         return res.status(401).json({message: 'Пользователь не авторизован'});
     }
