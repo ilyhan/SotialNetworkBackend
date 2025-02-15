@@ -72,7 +72,7 @@ class UserController {
             res.cookie('token', token, {
                 httpOnly: true,
                 secure: true,
-                domain: '.onrender.com',
+                domain: 'sotialnetworkbackend.onrender.com',
                 path: '/',         
                 sameSite: 'none'   
             });
