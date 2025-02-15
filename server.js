@@ -11,9 +11,10 @@ app.use(express.json());
 //     },
 //     credentials: true
 // }));
+
 app.use(cors({
-    origin: 'https://sotialnetwork2.onrender.com/', // Укажите домен фронтенда
-    credentials: true, // Разрешить передачу кук
+    origin: 'https://sotialnetwork2.onrender.com', 
+    credentials: true, 
 }));
 
 app.use(cookieParser());
