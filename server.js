@@ -4,13 +4,18 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
 app.use(express.json());
+// app.use(cors({
+//     origin: (origin, callback) => {
+//         if (!origin) return callback(null, true);
+//         callback(null, true);
+//     },
+//     credentials: true
+// }));
 app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        callback(null, true);
-    },
-    credentials: true
+    origin: 'https://sotialnetwork2.onrender.com/', // Укажите домен фронтенда
+    credentials: true, // Разрешить передачу кук
 }));
+
 app.use(cookieParser());
 
 const userRouter = require('./routes/user.routes');
