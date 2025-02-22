@@ -7,6 +7,7 @@ const {
     ref,
     uploadBytes,
     getDownloadURL,
+    deleteObject
 } = require('firebase/storage');
 const { auth } = require('../firebase.config');
 
@@ -73,8 +74,8 @@ class UserController {
                 httpOnly: true,
                 secure: true,
                 domain: 'sotialnetworkbackend.onrender.com',
-                path: '/',         
-                sameSite: 'none'   
+                path: '/',
+                sameSite: 'none'
             });
             return res.json({ token });
         } catch (e) {
@@ -84,7 +85,14 @@ class UserController {
 
     async logout(req, res) {
         try {
-            res.cookie('token', '', { httpOnly: true, secure: true, expires: new Date(0) });
+            res.cookie('token', '', {
+                httpOnly: true,
+                secure: true,
+                domain: 'sotialnetworkbackend.onrender.com',
+                path: '/',
+                sameSite: 'none',
+                expires: new Date(0)
+            });
 
             return res.json({ message: "Вы успешно вышли из системы" });
         } catch (e) {
@@ -229,7 +237,7 @@ class UserController {
 
             const userInfo = result.rows[0];
 
-            const posts = await db.query('SELECT * FROM posts WHERE user_id = $1', [userInfo.id]);
+            const posts = await db.query('SELECT * FROM posts WHERE user_id = $1 ORDER BY created_at DESC', [userInfo.id]);
             userInfo.posts = posts.rows;
 
             return res.json(userInfo);
@@ -277,7 +285,27 @@ class UserController {
             const file = req.file;
             const { id } = req.user;
 
-            const filename = new Date().getTime() + '_' + file.filename;
+            const userResult = await db.query('SELECT avatar FROM users WHERE id = $1', [id]);
+            const oldAvatarURL = userResult.rows[0]?.avatar;
+            console.log(oldAvatarURL);
+
+            const extractPathFromURL = (url) => {
+                const pathStart = url.indexOf('/o/') + 3;
+                const pathEnd = url.indexOf('?');
+                return decodeURIComponent(url.slice(pathStart, pathEnd));
+            };
+
+            if (oldAvatarURL) {
+                try {
+                    const oldAvatarPath = extractPathFromURL(oldAvatarURL);
+                    const oldFileRef = ref(auth, oldAvatarPath);
+                    await deleteObject(oldFileRef);
+                } catch (deleteError) {
+                    console.error('Ошибка при удалении старой аватарки:', deleteError.message);
+                }
+            }
+
+            const filename = new Date().getTime();
             const imageRef = ref(auth, 'avatar/' + filename);
             const snapshot = await uploadBytes(imageRef, file.buffer);
             const imageURL = await getDownloadURL(snapshot.ref);
@@ -294,6 +322,26 @@ class UserController {
         try {
             const file = req.file;
             const { id } = req.user;
+
+            const userResult = await db.query('SELECT background_image FROM users WHERE id = $1', [id]);
+            const oldAvatarURL = userResult.rows[0]?.background_image;
+            console.log(oldAvatarURL);
+
+            const extractPathFromURL = (url) => {
+                const pathStart = url.indexOf('/o/') + 3;
+                const pathEnd = url.indexOf('?');
+                return decodeURIComponent(url.slice(pathStart, pathEnd));
+            };
+
+            if (oldAvatarURL) {
+                try {
+                    const oldAvatarPath = extractPathFromURL(oldAvatarURL);
+                    const oldFileRef = ref(auth, oldAvatarPath);
+                    await deleteObject(oldFileRef);
+                } catch (deleteError) {
+                    console.error('Ошибка при удалении старой аватарки:', deleteError.message);
+                }
+            }
 
             const filename = new Date().getTime() + '_' + file.filename;
             const imageRef = ref(auth, 'background/' + filename);
@@ -402,6 +450,96 @@ class UserController {
 
             res.json(result.rows);
 
+        }
+        catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async getInfinityPosts(req, res) {
+        try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const { id } = req.user;
+
+            if (isNaN(page) || isNaN(limit)) {
+                return res.status(400).json({ message: "Неверные параметры page или limit" });
+            }
+
+            const offset = (page - 1) * limit;
+
+            const result = await db.query(`
+                SELECT 
+                    p.id, 
+                    p.user_id,
+                    p.content,
+                    p.media_content, 
+                    p.likes_count,
+                    p.created_at,
+                    EXISTS (SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = $1) AS liked,
+                    users.username, 
+                    users.avatar,
+                    users.first_name,
+                    users.last_name
+                FROM 
+                    posts p
+                JOIN users ON p.user_id = users.id
+                ORDER BY 
+                    p.created_at DESC
+                LIMIT $2 OFFSET $3
+            `, [id, limit, offset]);
+
+            res.json(result.rows);
+        }
+        catch (e) {
+            return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });
+        }
+    }
+
+    async deletePost(req, res) {
+        try {
+            const { id } = req.user;
+            const { post_id } = req.body;
+
+            const result = await db.query(`
+                SELECT media_content FROM posts
+                WHERE id = $1 AND user_id = $2
+            `, [post_id, id]);
+            const media = result.rows[0].media_content;
+
+            if (media) {
+                for (let i = 0; i < media.length; i++) {
+                    const oldAvatarURL = media[i];
+
+                    const extractPathFromURL = (url) => {
+                        const pathStart = url.indexOf('/o/') + 3;
+                        const pathEnd = url.indexOf('?');
+                        return decodeURIComponent(url.slice(pathStart, pathEnd));
+                    };
+
+                    if (oldAvatarURL) {
+                        try {
+                            const oldAvatarPath = extractPathFromURL(oldAvatarURL);
+                            const oldFileRef = ref(auth, oldAvatarPath);
+                            await deleteObject(oldFileRef);
+                        } catch (deleteError) {
+                            console.error('Ошибка при удалении старой аватарки:', deleteError.message);
+                        }
+                    }
+                };
+            }
+
+            await db.query(`
+                DELETE FROM likes
+                WHERE post_id = $1
+            `, [post_id]);
+
+            await db.query(`
+                DELETE FROM posts
+                WHERE id = $1 AND user_id = $2
+            `, [post_id, id]);
+
+            res.json({ message: 'Пост успешно удален' });
         }
         catch (e) {
             return res.status(500).json({ message: "Произошла непредвиденная ошибка", error: e.message });

@@ -31,5 +31,7 @@ router.post('/support', authorization, userController.newSupportMessage);
 router.get('/favorites', authorization, userController.getFavoritesPosts);
 router.get('/followers/:user_id', authorization, userController.getFollowers);
 router.get('/following/:user_id', authorization, userController.getFollowing);
+router.get('/infinity-post', authorization, userController.getInfinityPosts);
+router.delete('/delete-post', authorization, userController.deletePost);
 
 module.exports = router;
