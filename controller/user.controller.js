@@ -55,7 +55,7 @@ class UserController {
                 username,
                 password
             } = req.body;
-            console.log(username)
+
             const result = await db.query('SELECT * FROM users WHERE username = $1', [username]);
             if (result.rows.length == 0) {
                 return res.status(400).json({ message: "Пользователь с таким Никнеймом не найден" });
@@ -69,34 +69,9 @@ class UserController {
             }
 
             const token = generateAccessToken(user.id, username);
-
-            res.cookie('token', token, {
-                httpOnly: true,
-                secure: true,
-                domain: 'sotialnetworkbackend.onrender.com',
-                path: '/',
-                sameSite: 'none'
-            });
             return res.json({ token });
         } catch (e) {
             return res.status(400).json({ message: "Произошла ошибка авторизации пользователя", error: e.message });
-        }
-    }
-
-    async logout(req, res) {
-        try {
-            res.cookie('token', '', {
-                httpOnly: true,
-                secure: true,
-                domain: 'sotialnetworkbackend.onrender.com',
-                path: '/',
-                sameSite: 'none',
-                expires: new Date(0)
-            });
-
-            return res.json({ message: "Вы успешно вышли из системы" });
-        } catch (e) {
-            return res.status(500).json({ message: "Ошибка при выходе из системы", error: e.message });
         }
     }
 
