@@ -16,7 +16,6 @@ router.post('/user', [
     check('password', "Пароль должен быть больше 5 и меньше 15 символов").isLength({ min: 5, max: 15 }),
 ], userController.createUser);
 router.post('/login', userController.login);
-router.post('/logout', userController.logout);
 router.get('/refresh', authorization, userController.refresh);
 router.post('/newpost', [authorization, upload.array('images', 10)], userController.createPost);
 router.get('/posts', authorization, userController.getAllPosts);

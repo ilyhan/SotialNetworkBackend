@@ -4,18 +4,17 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
 app.use(express.json());
-app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        callback(null, true);
-    },
-    credentials: true
-}));
-
 // app.use(cors({
-//     origin: 'https://sotialnetwork2.onrender.com', 
-//     credentials: true, 
+//     origin: (origin, callback) => {
+//         if (!origin) return callback(null, true);
+//         callback(null, true);
+//     },
 // }));
+
+app.use(cors({
+    origin: 'https://sotialnetwork2.onrender.com', 
+    credentials: true, 
+}));
 
 app.use(cookieParser());
 
