@@ -3,7 +3,6 @@ const { secret } = require('../config');
 const USER_QUERY = require('../query/user.query');
 const bcrypt = require('bcryptjs');
 const db = require('../db');
-require('dotenv').config();
 
 class AuthService {
     generateAccessToken = (id, username) => {
@@ -12,7 +11,7 @@ class AuthService {
             username,
         }
 
-        return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1d" });
+        return jwt.sign(payload, secret, { expiresIn: "1d" });
     }
 
     async createUser({ first_name, last_name, username, email, password }) {
