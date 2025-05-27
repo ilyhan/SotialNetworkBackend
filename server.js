@@ -10,8 +10,6 @@ const searchRouter = require('./routes/search.route');
 const socialRouter = require('./routes/social.route');
 const supportRouter = require('./routes/support.route');
 
-app.use(express.json());
-
 app.use(cors({
     origin: 'https://sotialnetwork2.onrender.com', 
     credentials: true, 
