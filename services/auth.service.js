@@ -30,9 +30,12 @@ class AuthService {
     }
 
     async login({username, password}){
+        console.log(username);
+
         const result = await db.query(USER_QUERY.get, [username]);
         if (result.rows.length == 0) throw new Error("Пользователь с таким Никнеймом не найден");
 
+        console.log(result);
         const user = result.rows[0];
         const validPassword = bcrypt.compareSync(password, user.password);
 
